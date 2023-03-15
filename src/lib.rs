@@ -134,11 +134,7 @@ impl ShvftTurtle {
                 db.get(&format!("{}",tiles[h_v[0]][h_v[1]])).unwrap().rgb.r + 5,
                 db.get(&format!("{}",tiles[h_v[0]][h_v[1]])).unwrap().rgb.g + 5,
                 db.get(&format!("{}",tiles[h_v[0]][h_v[1]])).unwrap().rgb.b + 5
-            ],/*[
-                db.get(&format!("{}",tiles[h_v[0]][h_v[1]])).unwrap().rgb.r - 25,
-                db.get(&format!("{}",tiles[h_v[0]][h_v[1]])).unwrap().rgb.g - 25,
-                db.get(&format!("{}",tiles[h_v[0]][h_v[1]])).unwrap().rgb.b - 25
-            ],*/
+            ],
             [0,0,0],
             [
                 db.get(&format!("{}",tiles[h_v[0]][h_v[1]])).unwrap().rgb.r,
