@@ -74,17 +74,14 @@ pub struct ShvftSwitch {
 }
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct ShvftMap {
-    pub tiles: Vec<Vec<u8>>,
+    pub width:usize,
+    pub tiles: Vec<u8>,
     pub doors: Vec<ShvftDoor>,
     pub notes: Vec<ShvftNote>,
     pub containers: Vec<ShvftContainer>,
 }
 #[derive(Deserialize, Serialize, Debug, Clone)]
-pub struct ShvftRgb {
-    pub r: u8,
-    pub g: u8,
-    pub b: u8,
-}
+pub type ShvftRgb = [u8;3];
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct DbItem {
     pub description: String,
@@ -667,6 +664,7 @@ pub async fn from_domain(domain: String) -> ShvftTurtle {
                 .unwrap(),
         },
         map: ShvftMap {
+            width,
             tiles,
             doors: from_str(
                 &read_to_string(&format!(
