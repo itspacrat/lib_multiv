@@ -1,6 +1,6 @@
 use {
     serde::{Deserialize, Serialize},
-    hex::{decode,encode},
+    //hex::{decode,encode},
     strum::{FromRepr},
     std::{collections::HashMap,cell::RefCell,path::{Path, PathBuf},},
     serde_json::{from_str,to_string_pretty,to_string},
@@ -75,12 +75,12 @@ pub struct ShvftSwitch {
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct ShvftMap {
     pub width:usize,
-    pub tiles: Vec<u8>,
+    pub tiles: Vec<Vec<u8>>,
     pub doors: Vec<ShvftDoor>,
     pub notes: Vec<ShvftNote>,
     pub containers: Vec<ShvftContainer>,
 }
-#[derive(Deserialize, Serialize, Debug, Clone)]
+//#[derive(Deserialize, Serialize, Debug, Clone)]
 pub type ShvftRgb = [u8;3];
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct DbItem {
@@ -113,11 +113,11 @@ impl ShvftTurtle {
             for pix_x in 0..tiles.len() {
                 map_image_buf.put_pixel(pix_x as u32, pix_y as u32, *Pixel::from_slice(&[
                     //r
-                    db.get(&format!("{}",tiles[pix_x][pix_y])).unwrap().rgb.r,
+                    db.get(&format!("{}",tiles[pix_x as usize][pix_y as usize])).unwrap().rgb[0],
                     //g
-                    db.get(&format!("{}",tiles[pix_x][pix_y])).unwrap().rgb.g,
+                    db.get(&format!("{}",tiles[pix_x][pix_y])).unwrap().rgb[1],
                     //b
-                    db.get(&format!("{}",tiles[pix_x][pix_y])).unwrap().rgb.b
+                    db.get(&format!("{}",tiles[pix_x][pix_y])).unwrap().rgb[2]
                 ]));
             }
         }
@@ -128,15 +128,15 @@ impl ShvftTurtle {
         );
         let cursor_colors = [
             [
-                db.get(&format!("{}",tiles[h_v[0]][h_v[1]])).unwrap().rgb.r + 5,
-                db.get(&format!("{}",tiles[h_v[0]][h_v[1]])).unwrap().rgb.g + 5,
-                db.get(&format!("{}",tiles[h_v[0]][h_v[1]])).unwrap().rgb.b + 5
+                db.get(&format!("{}",tiles[h_v[0]][h_v[1]])).unwrap().rgb[0] + 5,
+                db.get(&format!("{}",tiles[h_v[0]][h_v[1]])).unwrap().rgb[1] + 5,
+                db.get(&format!("{}",tiles[h_v[0]][h_v[1]])).unwrap().rgb[2] + 5
             ],
             [0,0,0],
             [
-                db.get(&format!("{}",tiles[h_v[0]][h_v[1]])).unwrap().rgb.r,
-                db.get(&format!("{}",tiles[h_v[0]][h_v[1]])).unwrap().rgb.g,
-                db.get(&format!("{}",tiles[h_v[0]][h_v[1]])).unwrap().rgb.b
+                db.get(&format!("{}",tiles[h_v[0]][h_v[1]])).unwrap().rgb[0],
+                db.get(&format!("{}",tiles[h_v[0]][h_v[1]])).unwrap().rgb[1],
+                db.get(&format!("{}",tiles[h_v[0]][h_v[1]])).unwrap().rgb[2]
             ],
         ];
         // do the cursor overlay thing
@@ -345,7 +345,7 @@ impl ShvftTurtle {
                         ).unwrap();
                         *tiles = next_tiles
                         .into_iter()
-                        .map(|s| decode(s).unwrap())
+                        //.map(|s| decode(s).unwrap())
                         .collect::<Vec<_>>();
                         [*h, *v] = door_holder.there.to_owned();
                         println!("exit coords: {},{}", &h, &v);
@@ -646,7 +646,7 @@ pub async fn from_domain(domain: String) -> ShvftTurtle {
     .unwrap();
     let tiles = tiles
         .into_iter()
-        .map(|s| decode(s).unwrap())
+        //.map(|s| decode(s).unwrap())
         .collect::<Vec<_>>();
     ShvftTurtle {
         domain: domain.clone(),
