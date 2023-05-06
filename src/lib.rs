@@ -1,6 +1,5 @@
 use {
     serde::{Deserialize, Serialize},
-    //hex::{decode,encode},
     strum::{FromRepr},
     std::{collections::HashMap,cell::RefCell,path::{Path, PathBuf},},
     serde_json::{from_str,to_string_pretty,to_string},
@@ -9,7 +8,7 @@ use {
     tokio::fs::{create_dir_all, read_to_string, write, OpenOptions},
 };
 pub type Pos = usize;
-pub type Pos2D = [Pos; 2];
+//pub type Pos = Pos;
 pub type TurtAttrs = Vec<TurtAttr>;
 #[derive(Deserialize, Serialize, Debug, Clone, Copy, PartialEq, FromRepr)]
 #[repr(u8)]
@@ -49,19 +48,19 @@ pub enum TurtAttr {
 }
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct ShvftContainer {
-    pub pos: Pos2D,
+    pub pos: Pos,
     pub inventory: Vec<u8>,
 }
 /// requires attribute "opendoor"
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct ShvftNote {
-    pub pos: Pos2D,
+    pub pos: Pos,
     pub content: String,
 }
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct ShvftDoor {
-    pub here: Pos2D,
-    pub there: Pos2D,
+    pub here: Pos,
+    pub there: Pos,
     pub exit_map: String,
     pub exit_direction: char,
 }
@@ -69,12 +68,12 @@ pub struct ShvftDoor {
 pub struct ShvftSwitch {
     pub state: bool,
     pub map: String,
-    pub here: Pos2D,
-    pub there: Pos2D,
+    pub here: Pos,
+    pub there: Pos,
 }
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct ShvftMap {
-    pub width:usize,
+    pub width:Pos,
     pub tiles: Vec<u8>,
     pub doors: Vec<ShvftDoor>,
     pub notes: Vec<ShvftNote>,
@@ -93,7 +92,7 @@ pub struct ShvftInfo {
     pub current_map: String,
     pub nametag: String,
     pub db: HashMap<String, DbItem>,
-    pub h_v: Pos2D,
+    pub pos: Pos,
     pub inventory: Vec<u8>,
     pub rail: Vec<u8>,
 }
@@ -104,88 +103,15 @@ pub struct ShvftTurtle {
     pub map: ShvftMap,
 }
 impl ShvftTurtle {
-    pub async fn update_cam(&self) {
-        let height_target:u32 = 600;
-        // extract references to image-related data
-        let Self {domain,info: ShvftInfo {db,current_map,h_v,..},map: ShvftMap {tiles,..},..} = self;
-        let mut map_image_buf: RgbImage = ImageBuffer::new(tiles.len() as u32,tiles[0].len() as u32);
-        for pix_y in 0..tiles[0].len() {
-            for pix_x in 0..tiles.len() {
-                map_image_buf.put_pixel(pix_x as u32, pix_y as u32, *Pixel::from_slice(&[
-                    //r
-                    db.get(&format!("{}",tiles[pix_x as usize][pix_y as usize])).unwrap().rgb[0],
-                    //g
-                    db.get(&format!("{}",tiles[pix_x][pix_y])).unwrap().rgb[1],
-                    //b
-                    db.get(&format!("{}",tiles[pix_x][pix_y])).unwrap().rgb[2]
-                ]));
-            }
-        }
-        map_image_buf = resize(
-            &map_image_buf,
-            (map_image_buf.width() as f64 * (height_target as f64/map_image_buf.height() as f64)).ceil() as u32, 
-            height_target, FilterType::Nearest
-        );
-        let cursor_colors = [
-            [
-                db.get(&format!("{}",tiles[h_v[0]][h_v[1]])).unwrap().rgb[0] + 5,
-                db.get(&format!("{}",tiles[h_v[0]][h_v[1]])).unwrap().rgb[1] + 5,
-                db.get(&format!("{}",tiles[h_v[0]][h_v[1]])).unwrap().rgb[2] + 5
-            ],
-            [0,0,0],
-            [
-                db.get(&format!("{}",tiles[h_v[0]][h_v[1]])).unwrap().rgb[0],
-                db.get(&format!("{}",tiles[h_v[0]][h_v[1]])).unwrap().rgb[1],
-                db.get(&format!("{}",tiles[h_v[0]][h_v[1]])).unwrap().rgb[2]
-            ],
-        ];
-        // do the cursor overlay thing
-        let offset: [f64;2] = [
-            (1 as f64/tiles.len() as f64) *
-            (map_image_buf.width() as f64 * (height_target as f64/map_image_buf.height() as f64)).ceil(),
-            ((1 as f64 / tiles[0].len() as f64) * height_target as f64).ceil()
-        ]; // cursor data len = offset[0]*offset[1]
-        
-        
-        for cursor_dither_y  in (((h_v[1])*offset[1] as usize) as u32..((1 + h_v[1])*offset[1] as usize) as u32) {
-            for cursor_dither_x in (((h_v[0])*offset[0] as usize) as u32..((1 + h_v[0])*offset[0] as usize) as u32) {
-                map_image_buf.put_pixel(
-                    cursor_dither_x,
-                    cursor_dither_y,
-                    if (cursor_dither_x % 2 == 0) != (cursor_dither_y % 2 == 0){
-                        *Pixel::from_slice(&[50,50,255])
-                    } else {
-                        //*Pixel::from_slice(&cursor_colors[1])
-                        *Pixel::from_slice(&[255,255,0])
-                    }
-                    //
-                   // *Pixel::from_slice(&cursor_colors[1])
-                )
-            }
-        }
-
-        println!(
-            "dithered from ({},{}) to ({},{})",
-            ((h_v[0] + 1)*offset[0] as usize) as u32,
-            ((h_v[1]+ 1)*offset[1] as usize) as u32,
-            (h_v[0]*offset[0] as usize) as u32,
-            (h_v[1]*offset[1] as usize) as u32,
-        );
-        
-        map_image_buf.save(&format!("domains/{domain}/info/current_map.png")).unwrap();
-    }
-    pub async fn post_cam(&self) -> String {
-        let mut out = String::new();
-
-
-        
-        
-        out
-    }
+    
+    
+    
+    
+    /*
     /// checks a tile at a given direction and position
     pub async fn ck(&mut self, direction: &char) -> String {
         let Self {
-            info: ShvftInfo { db, h_v, .. },
+            info: ShvftInfo { db, pos, .. },
             map:
                 ShvftMap {
                     tiles,
@@ -198,47 +124,47 @@ impl ShvftTurtle {
         let mut peek_result: String = String::new();
         //
         // abstract to position
-        let [h, v] = h_v;
-        let fetch_notes = |hori: usize, vert: usize| {
-            db.get(&format!("{}", tiles[hori][vert]))
+        let pos = pos;
+        let fetch_notes = |p: usize| {
+            db.get(&format!("{}", tiles[p]))
                 .unwrap()
                 .attributes
                 .contains(&TurtAttr::Read)
         };
-        let fetch_doors = |hori: usize, vert: usize| {
-            db.get(&format!("{}", tiles[hori][vert]))
+        let fetch_doors = |p: usize| {
+            db.get(&format!("{}", tiles[p]))
                 .unwrap()
                 .attributes
                 .contains(&TurtAttr::Door)
         };
-        let fetch_containers = |hori: usize, vert: usize| {
-            db.get(&format!("{}", tiles[hori][vert]))
+        let fetch_containers = |p: usize| {
+            db.get(&format!("{}", tiles[p]))
                 .unwrap()
                 .attributes
                 .contains(&TurtAttr::StoreItems)
         };
-        let [potential_h, potential_v] =
-            next_hv(direction.clone(), [&h, &v], [&tiles.len(), &tiles[0].len()]);
+        let potential_pos =
+            next_pos(direction.clone(), [&pos], [&tiles.len()]);
         match direction {
             'n' | 'N' | 'k' | 'K' | 's' | 'S' | 'j' | 'J' | 'e' | 'E' | 'l' | 'L' | 'w' | 'W'
             | 'h' | 'H' | '.' => {
-                if fetch_doors(potential_h, potential_v) {
+                if fetch_doors(potential_pos) {
                     // CHECK DOOR THIS DIRECTION
-                    tiles[potential_h][potential_v] = 5;
-                    println!("{}", &tiles[potential_h][potential_v]);
+                    tiles[potential_pos] = 5;
+                    println!("{}", &tiles[potential_pos]);
                     peek_result = String::from(" -> 5");
-                } else if fetch_notes(potential_h, potential_v) {
+                } else if fetch_notes(potential_pos) {
                     for note in notes {
-                        if note.pos == [potential_h, potential_v] {
+                        if note.pos == [potential_pos] {
                             peek_result = note.content.to_owned();
                             println!("{}", &peek_result);
                         } else {
                             /* wrong note */
                         }
                     }
-                } else if fetch_containers(potential_h, potential_v) {
+                } else if fetch_containers(potential_pos) {
                     for container in containers {
-                        if container.pos == [potential_h, potential_v] {
+                        if container.pos == [potential_pos] {
                             peek_result = String::from(format!(
                                 "container: {:?}",
                                 container.inventory.to_owned()
@@ -253,13 +179,15 @@ impl ShvftTurtle {
             _ => { /* input already sanitized */ }
         }
         let result_tile_description = String::from(
-            &db.get(&format!("{}", &tiles[potential_h][potential_v]))
+            &db.get(&format!("{}", &tiles[potential_pos]))
                 .unwrap()
                 .description,
         );
         self.update_cam().await;
         format!("```fix\n{}```\n{}", result_tile_description, peek_result)
     }
+    */
+    /*
     ///
     /// moves turtle based on a vec of cardinal directions
     pub async fn mv(&mut self, directions: Vec<char>) {
@@ -268,7 +196,7 @@ impl ShvftTurtle {
             domain,
             info:
                 ShvftInfo {
-                    h_v,
+                    pos,
                     db,
                     current_map,
                     ..
@@ -286,8 +214,8 @@ impl ShvftTurtle {
         // load the item db
         let item_db = db;
         let doors_rc = RefCell::from(doors);
-        let [h, v] = h_v;
-        let [mut potential_h, mut potential_v]: Pos2D;
+        let [h, v] = pos;
+        let [mut potential_h, mut potential_v]: Pos;
         //
         // hacky door update workaround
         let mut door_holder: ShvftDoor = ShvftDoor {
@@ -299,12 +227,12 @@ impl ShvftTurtle {
         //
         // check criteria for directions inside of passthrough tiles
         for direction in directions {
-            [potential_h, potential_v] =
-                next_hv(direction, [h, v], [&tiles.len(), &tiles[0].len()]);
+            [potential_pos] =
+                next_pos(direction, [h, v], [&tiles.len(), &tiles.len()]);
             let attrs = &item_db
                 .get(&String::from(&format!(
                     "{}",
-                    &tiles[potential_h][potential_v].clone()
+                    &tiles[potential_pos].clone()
                 )))
                 .unwrap()
                 .attributes;
@@ -324,7 +252,7 @@ impl ShvftTurtle {
                                 " move: {},{} over door: {:?}",
                                 &potential_h, &potential_v, &door
                             );
-                            [*h, *v] = [potential_h, potential_v];
+                            [*h, *v] = [potential_pos];
                         }
                     }
                     if update {
@@ -360,17 +288,17 @@ impl ShvftTurtle {
                     }
                 } else {
                     /* carry on, move the thing */
-                    [*h, *v] = [potential_h, potential_v];
+                    [*h, *v] = [potential_pos];
                 }
             } else {
                 /* solid tile detected */
                 for attr in attrs {
                     match attr {
                         Push => {
-                            let [box_next_h, box_next_v] = next_hv(
+                            let [box_next_h, box_next_v] = next_pos(
                                 direction,
                                 [&potential_h, &potential_v],
-                                [&tiles.len(), &tiles[0].len()],
+                                [&tiles.len(), &tiles.len()],
                             );
                             println!("{:?}", [&box_next_h, &box_next_v]);
                             let attrs = &item_db
@@ -386,20 +314,20 @@ impl ShvftTurtle {
                             } else {
                                 /* otherwise, scoot the box forward 1 */
                                 tiles[box_next_h][box_next_v] =
-                                    tiles[potential_h][potential_v].clone();
+                                    tiles[potential_pos].clone();
                                 let mut default_under = 1;
                                 for door_hv in doors_rc.borrow_mut().iter_mut() {
-                                    if [potential_h, potential_v] == door_hv.here {
+                                    if [potential_pos] == door_hv.here {
                                         default_under = 5;
                                     }
                                 }
                                 for note_hv in notes.iter() {
-                                    if [potential_h, potential_v] == note_hv.pos {
+                                    if [potential_pos] == note_hv.pos {
                                         default_under = 8;
                                     }
                                 }
 
-                                tiles[potential_h][potential_v] = default_under;
+                                tiles[potential_pos] = default_under;
                             }
 
                             let tiles = tiles.iter().map(|s| encode(s)).collect::<Vec<_>>();
@@ -418,18 +346,19 @@ impl ShvftTurtle {
         }
         self.update_cam().await;
     }
-
+    */
+    /* 
     /// peeks at a given tile without interacting
     pub async fn pk(&mut self, direction: char) -> String {
         let Self {
-            info: ShvftInfo { h_v, .. },
+            info: ShvftInfo { pos, .. },
             map: ShvftMap { tiles, .. },
             ..
         } = self;
 
-        let [h, v] = h_v;
-        let [potential_h, potential_v]: Pos2D;
-        [potential_h, potential_v] = next_hv(direction, [h, v], [&tiles.len(), &tiles[0].len()]);
+        let [h, v] = pos;
+        let [potential_pos]: Pos;
+        [potential_pos] = next_pos(direction, [h, v], [&tiles.len(), &tiles.len()]);
         let peek_result: String = match direction {
             'n' | 'N' | 'k' | 'K' | 's' | 'S' | 'j' | 'J' | 'e' | 'E' | 'l' | 'L' | 'w' | 'W'
             | 'h' | 'H' | '.' => {
@@ -445,7 +374,7 @@ impl ShvftTurtle {
             domain,
             info:
                 ShvftInfo {
-                    h_v,
+                    pos,
                     db,
                     inventory,
                     current_map,
@@ -459,9 +388,9 @@ impl ShvftTurtle {
 
         //
         // set up next hv
-        let [h, v] = h_v;
-        let hv_max = [&tiles.len(), &tiles[0].len()];
-        let [next_h, next_v] = next_hv(*direction, [h, v], hv_max);
+        let [h, v] = pos;
+        let hv_max = [&tiles.len(), &tiles.len()];
+        let [next_p] = next_pos(*direction, pos, hv_max);
 
         //
         // take the thing
@@ -486,7 +415,7 @@ impl ShvftTurtle {
             println!("container found");
             for container in containers.iter_mut() {
                 //println!("{} {} {:?}",container.pos[0],container.pos[1],[next_h, next_v]);
-                if ([container.pos[0], container.pos[1]]) == ([next_h, next_v]) {
+                if (container.pos) == (next_p) {
                     /* correct container */
                     // check & set inventory item on turtle
                     println!("{container:?}, taking index {index}");
@@ -522,12 +451,12 @@ impl ShvftTurtle {
         .unwrap();
         take_result
     }
-
-    pub async fn swap_with_floor(&mut self, direction: char, inv_index: usize) -> Result<String> {
-        let target_tile: [usize; 2] = next_hv(
+    */
+    /* pub async fn swap_with_floor(&mut self, direction: char, inv_index: usize) -> Result<String> {
+        let target_tile: [usize; 2] = next_pos(
             direction,
-            [&self.info.h_v[0], &self.info.h_v[1]],
-            [&self.map.tiles.len(), &self.map.tiles[0].len()],
+            [&self.info.pos[0], &self.info.pos[1]],
+            [&self.map.tiles.len(), &self.map.tiles.len()],
         );
         let inventory_item_id = &mut self.info.inventory[inv_index];
         let inventory_item_attrs = get_attrs(&self.info.db, *inventory_item_id)?;
@@ -569,9 +498,10 @@ impl ShvftTurtle {
 
         Ok(format!(""))
     }
+    */
     ///
     /// perform a container swap and return the resulting swap info
-    pub async fn swap_with_container(
+    /* pub async fn swap_with_container(
         &mut self,
         direction: char,
         inv_index: usize,
@@ -579,7 +509,7 @@ impl ShvftTurtle {
     ) -> Result<String> {
         let inventory_item_id = &mut self.info.inventory[inv_index];
         let inventory_item_attrs = get_attrs(&self.info.db, *inventory_item_id)?;
-        let container_ref = get_container_mut(&self.map.containers, &self.info.h_v)?;
+        let container_ref = get_container_mut(&self.map.containers, &self.info.pos)?;
         let container_item_id = &mut container_ref.inventory[container_index];
         let container_item_attrs = get_attrs(&self.info.db, *container_item_id)?;
 
@@ -609,7 +539,9 @@ impl ShvftTurtle {
 
         Ok(format!(""))
     }
+    */
 
+    /*
     pub fn cs(&mut self, direction: char, index: usize) -> String {
         let Self {
             domain,
@@ -618,12 +550,13 @@ impl ShvftTurtle {
         } = self;
         String::from("")
     }
+    */
 }
 ///
 /// returns a mutable reference to a `ShvftContainer` via a set of hv coords
 fn get_container_mut<'a>(
     containers: &'a Vec<ShvftContainer>,
-    pos: &'a Pos2D,
+    pos: &'a Pos,
 ) -> Result<&'a mut ShvftContainer> {
     todo!()
 }
@@ -654,7 +587,7 @@ pub async fn from_domain(domain: String) -> ShvftTurtle {
             current_map: current_map.clone(),
             nametag: String::from("turtle"),
             db: from_str(&read_to_string("domains/global/item_db.json").await.unwrap()).unwrap(),
-            h_v: from_str(&read_to_string(format!("domains/{}/info/pos.json", &domain)).await.unwrap())
+            pos: from_str(&read_to_string(format!("domains/{}/info/pos.json", &domain)).await.unwrap())
                 .unwrap(),
             inventory: from_str(
                 &read_to_string(format!("domains/{}/info/inv.json", &domain)).await.unwrap(),
@@ -694,38 +627,35 @@ pub async fn from_domain(domain: String) -> ShvftTurtle {
     }
 }
 /// sets the potential horizontal and vertical value given a direction and tileset dimensions
-pub fn next_hv(dir: char, c_pos: [&Pos; 2], max_hv: [&Pos; 2]) -> Pos2D {
-    let [h, v] = c_pos;
-    let [t_h, t_v] = max_hv;
-    let potential_h: Pos;
-    let potential_v: Pos;
+pub fn next_pos(dir: char, c_pos: &Pos, max_pos: &Pos) -> Pos {
+    let p = c_pos;
+    let t_p = max_pos;
+    let potential_pos: Pos;
     match dir {
         'n' | 'N' | 'k' | 'K' => {
-            potential_h = *h;
-            potential_v = if *v > 0 { *v - 1 } else { *v };
+            
+            potential_pos = if *v > 0 { *v - 1 } else { *v };
         }
         's' | 'S' | 'j' | 'J' => {
-            potential_h = *h;
-            potential_v = if *v < *t_v - 1 { *v + 1 } else { *v };
+           
+            potential_pos = if *v < *t_v - 1 { *v + 1 } else { *v };
         }
         'e' | 'E' | 'l' | 'L' => {
-            potential_h = if *h < *t_h - 1 { *h + 1 } else { *h };
-            potential_v = *v;
+            potential_pos = if *h < *t_h - 1 { *h + 1 } else { *h };
+            
         }
         'w' | 'W' | 'h' | 'H' => {
-            potential_h = if *h > 0 { *h - 1 } else { *h };
-            potential_v = *v;
+            potential_pos = if *h > 0 { *h - 1 } else { *h };
+            
         }
         '.' => {
-            potential_h = *h;
-            potential_v = *v;
+            
         }
         _ => {
-            potential_h = *h;
-            potential_v = *v;
+            
         }
     }
-    [potential_h, potential_v]
+    potential_pos
 }
 pub fn ck_inv_empty(inventory: &mut Vec<u8>) -> Option<usize> {
     let out: Option<usize>;
