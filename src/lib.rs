@@ -81,7 +81,7 @@ pub struct ShvftMap {
     pub notes: Vec<ShvftNote>,
     pub containers: Vec<ShvftContainer>,
 }
-//#[derive(Deserialize, Serialize, Debug, Clone)]
+
 pub type ShvftRgb = [u8;3];
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct DbItem {
