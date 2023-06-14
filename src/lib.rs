@@ -152,7 +152,7 @@ pub async fn new(domain: String) -> ShvftTurtle {
         map: map.to_owned(),
     }
 }
-/// sets the potential positional value given a direction and a ShvftMap reference
+/// sets & returns the potential map index given a direction and a ShvftMap reference
 pub fn next_pos(dir: char, c_pos: &Pos, data: &ShvftMap) -> Pos {
     let height = (
         (data.width as f32 / data.tiles.len() as f32).ceil()
@@ -169,7 +169,7 @@ pub fn next_pos(dir: char, c_pos: &Pos, data: &ShvftMap) -> Pos {
             potential_pos = if !(((*c_pos + 1) % data.width) == 0) {*c_pos + 1 as Pos} else {*c_pos};
         }
         'w' | 'W' => {
-            potential_pos = if !(((*c_pos - 1) % 0) == data.width - 1 as usize) {*c_pos - 1 as Pos} else {*c_pos};
+            potential_pos = if !(((*c_pos - 1) % data.width) == data.width - 1 as usize) {*c_pos - 1 as Pos} else {*c_pos};
         }
         '.' | 'h' | 'H' | _ => {
             potential_pos = *c_pos;
