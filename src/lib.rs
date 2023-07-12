@@ -1,16 +1,23 @@
 use {
+    anyhow::{Context, Error, Result},
+    image::{
+        imageops::{resize, FilterType},
+        ImageBuffer, Pixel, RgbImage,
+    },
     serde::{Deserialize, Serialize},
-    strum::{FromRepr},
-    std::{collections::HashMap,cell::RefCell,path::{Path, PathBuf},},
-    serde_json::{from_str,to_string_pretty,to_string},
-    anyhow::{Context,Error,Result},
-    image::{imageops::{resize,FilterType},Pixel,RgbImage,ImageBuffer},
+    serde_json::{from_str, to_string, to_string_pretty},
+    std::{
+        cell::RefCell,
+        collections::HashMap,
+        path::{Path, PathBuf},
+    },
+    strum::FromRepr,
     tokio::fs::{create_dir_all, read_to_string, write, OpenOptions},
 };
 
 /// Position type for the turtle (should be usize)
 pub type Pos = usize;
-//pub type Pos = Pos;
+
 pub type TurtAttrs = Vec<TurtAttr>;
 #[derive(Deserialize, Serialize, Debug, Clone, Copy, PartialEq, FromRepr)]
 #[repr(u8)]
@@ -30,9 +37,9 @@ enum TileDatum {
     LockedDoorTile = 12,
     LockedIIDoorTile = 13,
     SwitchTile = 14,
-    EndpointTile = 15
+    EndpointTile = 15,
 }
-#[derive(PartialEq,Deserialize,Serialize,Clone,Debug)]
+#[derive(PartialEq, Deserialize, Serialize, Clone, Debug)]
 pub enum TurtAttr {
     Null,
     NoPassThrough,
@@ -75,14 +82,13 @@ pub struct ShvftSwitch {
 }
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct ShvftMap {
-    pub width:Pos,
+    pub width: Pos,
     pub tiles: Vec<u8>,
     pub doors: Vec<ShvftDoor>,
     pub notes: Vec<ShvftNote>,
     pub containers: Vec<ShvftContainer>,
 }
-
-pub type ShvftRgb = [u8;3];
+pub type ShvftRgb = [u8; 3];
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct DbItem {
     pub description: String,
@@ -105,7 +111,29 @@ pub struct ShvftTurtle {
     pub map: ShvftMap,
 }
 impl ShvftTurtle {
-    
+    pub fn mv(&mut self, dirs: Vec<char>) {
+        let Self {
+            info: refinfo,
+            map: refmap,
+            ..
+        } = self;
+        let mut mv_out: Pos;
+        for d in dirs.iter() {
+            let attrs_next = get_attrs(
+                &refinfo.db,
+                refmap.tiles[next_pos(*d, &refinfo.pos, &refmap)],
+            )
+            .unwrap();
+
+            if attrs_next.contains(&TurtAttr::NoPassThrough) {
+                mv_out = refinfo.pos;
+            } else {
+                mv_out = next_pos(*d, &(refinfo.pos), &refmap);
+            }
+
+            refinfo.pos = mv_out;
+        }
+    }
 }
 //
 /// returns a mutable reference to a `ShvftContainer` via an index
@@ -124,12 +152,15 @@ fn get_attrs(db: &HashMap<String, DbItem>, item_id: u8) -> Result<&[TurtAttr]> {
 //
 /// creates a new instance of a turtle from default values at domain
 pub async fn new(domain: String) -> ShvftTurtle {
-    let current_map = read_to_string(format!("domains/{}/info/current_map.txt", &domain)).await.unwrap();
+    let current_map = read_to_string(format!("domains/{}/info/current_map.txt", &domain))
+        .await
+        .unwrap();
     let map: ShvftMap = from_str(
         &read_to_string(&format!(
             "domains/{}/maps/{}/map.json",
             domain, &current_map
-        )).await
+        ))
+        .await
         .unwrap(),
     )
     .unwrap();
@@ -140,36 +171,60 @@ pub async fn new(domain: String) -> ShvftTurtle {
             current_map: current_map.to_owned(),
             nametag: String::from("turtle"),
             db: from_str(&read_to_string("domains/global/item_db.json").await.unwrap()).unwrap(),
-            pos: from_str(&read_to_string(format!("domains/{}/info/pos.json", &domain)).await.unwrap())
-                .unwrap(),
-            inventory: from_str(
-                &read_to_string(format!("domains/{}/info/inv.json", &domain)).await.unwrap(),
+            pos: from_str(
+                &read_to_string(format!("domains/{}/info/pos.json", &domain))
+                    .await
+                    .unwrap(),
             )
             .unwrap(),
-            rail: from_str(&read_to_string(format!("domains/{}/info/rail.json", &domain)).await.unwrap())
-                .unwrap(),
+            inventory: from_str(
+                &read_to_string(format!("domains/{}/info/inv.json", &domain))
+                    .await
+                    .unwrap(),
+            )
+            .unwrap(),
+            rail: from_str(
+                &read_to_string(format!("domains/{}/info/rail.json", &domain))
+                    .await
+                    .unwrap(),
+            )
+            .unwrap(),
         },
         map: map.to_owned(),
     }
 }
 /// sets & returns the potential map index given a direction and a ShvftMap reference
-pub fn next_pos(dir: char, c_pos: &Pos, data: &ShvftMap) -> Pos {
-    let height = (
-        (data.width as f32 / data.tiles.len() as f32).ceil()
-    ) as usize;
+pub fn next_pos(dir: char, c_pos: &Pos, data: &&mut ShvftMap) -> Pos {
+    let height = ((data.width as f32 / data.tiles.len() as f32).ceil()) as usize;
     let potential_pos: Pos;
     match dir {
-        'n' | 'N'  => {
-            potential_pos = if!(*c_pos <= data.width - 1) {*c_pos - data.width} else {*c_pos};
+        'n' | 'N' => {
+            potential_pos = if !(*c_pos <= data.width - 1) {
+                *c_pos - data.width
+            } else {
+                *c_pos
+            };
         }
         's' | 'S' => {
-            potential_pos = if!(*c_pos  >= (data.tiles.len() - 1) - data.width) {*c_pos + data.width} else {*c_pos};
+            potential_pos = if !(*c_pos >= (data.tiles.len() - 1) - data.width) {
+                *c_pos + data.width
+            } else {
+                *c_pos
+            };
         }
         'e' | 'E' => {
-            potential_pos = if !(((*c_pos + 1) % data.width) == 0) {*c_pos + 1 as Pos} else {*c_pos};
+            potential_pos = if !(((*c_pos + 1) % data.width) == 0) {
+                *c_pos + 1 as Pos
+            } else {
+                *c_pos
+            };
         }
         'w' | 'W' => {
-            potential_pos = if !(((*c_pos - 1) % data.width) == data.width - 1 as usize) {*c_pos - 1 as Pos} else {*c_pos};
+            potential_pos = if !(((*c_pos - 1) % data.width) == data.width - 1 as usize) {
+                *c_pos - 1 as Pos
+            } else {
+                *c_pos
+            };
         }
         '.' | 'h' | 'H' | _ => {
             potential_pos = *c_pos;
