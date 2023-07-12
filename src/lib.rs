@@ -1,3 +1,5 @@
+use std::mem::take;
+
 use {
     anyhow::{Context, Error, Result},
     image::{
@@ -126,7 +128,21 @@ impl ShvftTurtle {
             .unwrap();
 
             if attrs_next.contains(&TurtAttr::NoPassThrough) {
-                mv_out = refinfo.pos;
+
+                if attrs_next.contains(&TurtAttr::Push) {
+                    let next = next_pos(*d,&refinfo.pos,refmap);
+                    let mut dummy = 0_u8;
+
+                    // swap push tiles
+                    dummy = refmap.tiles[refinfo.pos];
+                    refmap.tiles[refinfo.pos] = refmap.tiles[next];
+                    refmap.tiles[next] = dummy;
+
+                    mv_out = next_pos(*d, &(refinfo.pos), &refmap)
+                } else {
+                    mv_out = refinfo.pos;
+                }
+                
             } else {
                 mv_out = next_pos(*d, &(refinfo.pos), &refmap);
             }
@@ -194,7 +210,7 @@ pub async fn new(domain: String) -> ShvftTurtle {
     }
 }
 /// sets & returns the potential map index given a direction and a ShvftMap reference
-pub fn next_pos(dir: char, c_pos: &Pos, data: &&mut ShvftMap) -> Pos {
+pub fn next_pos(dir: char, c_pos: &Pos, data: &ShvftMap) -> Pos {
     let height = ((data.width as f32 / data.tiles.len() as f32).ceil()) as usize;
     let potential_pos: Pos;
     match dir {
