@@ -1,5 +1,7 @@
 use std::mem::take;
 
+use anyhow::ensure;
+
 use {
     anyhow::{Context, Error, Result},
     image::{
@@ -15,11 +17,11 @@ use {
     },
     strum::FromRepr,
     tokio::fs::{create_dir_all, read_to_string, write, OpenOptions},
+    //shvft_mapper::parsemap
 };
 
 /// Position type for the turtle (should be usize)
 pub type Pos = usize;
-
 pub type TurtAttrs = Vec<TurtAttr>;
 #[derive(Deserialize, Serialize, Debug, Clone, Copy, PartialEq, FromRepr)]
 #[repr(u8)]
@@ -113,7 +115,7 @@ pub struct ShvftTurtle {
     pub map: ShvftMap,
 }
 impl ShvftTurtle {
-    pub fn mv(&mut self, dirs: Vec<char>) {
+    pub async fn mv(&mut self, dirs: Vec<char>) {
         let Self {
             info: refinfo,
             map: refmap,
@@ -128,9 +130,8 @@ impl ShvftTurtle {
             .unwrap();
 
             if attrs_next.contains(&TurtAttr::NoPassThrough) {
-
                 if attrs_next.contains(&TurtAttr::Push) {
-                    let next = next_pos(*d,&refinfo.pos,refmap);
+                    let next = next_pos(*d, &refinfo.pos, refmap);
                     let mut dummy = 0_u8;
 
                     // swap push tiles
@@ -142,22 +143,51 @@ impl ShvftTurtle {
                 } else {
                     mv_out = refinfo.pos;
                 }
-                
             } else {
                 mv_out = next_pos(*d, &(refinfo.pos), &refmap);
             }
 
             refinfo.pos = mv_out;
         }
+        let _ = write(
+            format!(
+                "domains/{}/maps/{}/map.json",
+                self.domain, self.info.current_map
+            ),
+            to_string_pretty(&refmap).unwrap(),
+        )
+        .await
+        .unwrap();
     }
+
+    
 }
 //
 /// returns a mutable reference to a `ShvftContainer` via an index
 fn get_container_mut<'a>(
-    containers: &'a Vec<ShvftContainer>,
+    containers: &'a mut Vec<ShvftContainer>,
     pos: &'a Pos,
-) -> Result<&'a mut ShvftContainer> {
-    todo!()
+    destination_pos: &'a Pos,
+) -> Option<&'a mut ShvftContainer> {
+
+    let mut count: usize = 0;
+    //let out: &'a mut ShvftContainer;
+    let mut out_idx: usize = 0;
+
+    for (i,c) in containers.iter_mut().enumerate() {
+        if c.pos == *destination_pos {
+            count += 1;
+            out_idx = i;
+
+        } else {}
+    }
+
+    if count == 1 {
+        Some(&mut containers[out_idx])
+    } else {
+        None
+    }    
+    
 }
 fn get_attrs(db: &HashMap<String, DbItem>, item_id: u8) -> Result<&[TurtAttr]> {
     Ok(&db
