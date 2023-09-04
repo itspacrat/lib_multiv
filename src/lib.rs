@@ -15,7 +15,7 @@ use {
         collections::HashMap,
         path::{Path, PathBuf},
     },
-    strum::FromRepr,
+    strum::{FromRepr},
     tokio::fs::{create_dir_all, read_to_string, write, OpenOptions},
     //shvft_mapper::parsemap
 };
@@ -25,7 +25,7 @@ pub type Pos = usize;
 pub type TurtAttrs = Vec<TurtAttr>;
 #[derive(Deserialize, Serialize, Debug, Clone, Copy, PartialEq, FromRepr)]
 #[repr(u8)]
-enum TileDatum {
+pub enum TileDatum {
     NullTile = 0,
     FloorTile = 1,
     WallTile = 2,
@@ -62,7 +62,7 @@ pub enum TurtAttr {
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct ShvftContainer {
     pub pos: Pos,
-    pub inventory: Vec<u8>,
+    pub inventory: Vec<TileDatum>,
 }
 /// requires attribute "opendoor"
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -87,7 +87,7 @@ pub struct ShvftSwitch {
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct ShvftMap {
     pub width: Pos,
-    pub tiles: Vec<u8>,
+    pub tiles: Vec<TileDatum>,
     pub doors: Vec<ShvftDoor>,
     pub notes: Vec<ShvftNote>,
     pub containers: Vec<ShvftContainer>,
@@ -105,7 +105,7 @@ pub struct ShvftInfo {
     pub nametag: String,
     pub db: HashMap<String, DbItem>,
     pub pos: Pos,
-    pub inventory: Vec<u8>,
+    pub inventory: Vec<TileDatum>,
     pub rail: Vec<u8>,
 }
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -132,7 +132,7 @@ impl ShvftTurtle {
             if attrs_next.contains(&TurtAttr::NoPassThrough) {
                 if attrs_next.contains(&TurtAttr::Push) {
                     let next = next_pos(*d, &refinfo.pos, refmap);
-                    let mut dummy = 0_u8;
+                    let mut dummy: TileDatum = TileDatum::from_repr(0).unwrap();
 
                     // swap push tiles
                     dummy = refmap.tiles[refinfo.pos];
@@ -160,7 +160,31 @@ impl ShvftTurtle {
         .unwrap();
     }
 
-    
+    pub fn container_swap(&mut self, box_dir: char, give_index: usize, take_index: usize) {
+        
+
+        let Self {
+            info: ShvftInfo { pos: refpos, .. },
+            map: refmap,
+            ..
+        } = self;
+        let mut refcontainers = refmap.containers.clone();
+        let np = next_pos(box_dir, &refpos.clone(), refmap);
+
+        let container_ref = get_container_mut(
+            &mut refcontainers,
+            refpos,
+            &np,
+        )
+        .context("no container found :(")
+        .unwrap();
+
+        std::mem::swap(
+            &mut container_ref.inventory[take_index],
+            &mut self.info.inventory[give_index],
+        );
+        ()
+    }
 }
 //
 /// returns a mutable reference to a `ShvftContainer` via an index
@@ -171,27 +195,25 @@ fn get_container_mut<'a>(
 ) -> Option<&'a mut ShvftContainer> {
 
     let mut count: usize = 0;
-    //let out: &'a mut ShvftContainer;
     let mut out_idx: usize = 0;
 
-    for (i,c) in containers.iter_mut().enumerate() {
+    for (i, c) in containers.iter_mut().enumerate() {
         if c.pos == *destination_pos {
             count += 1;
             out_idx = i;
-
-        } else {}
+        } else {
+        }
     }
 
     if count == 1 {
         Some(&mut containers[out_idx])
     } else {
         None
-    }    
-    
+    }
 }
-fn get_attrs(db: &HashMap<String, DbItem>, item_id: u8) -> Result<&[TurtAttr]> {
+fn get_attrs(db: &HashMap<String, DbItem>, item_id: TileDatum) -> Result<&[TurtAttr]> {
     Ok(&db
-        .get(&format!("{}", item_id))
+        .get(&format!("{:?}", item_id))
         .context("NOT_VALID_ITEM")?
         .attributes)
 }
