@@ -15,7 +15,7 @@ use {
         collections::HashMap,
         path::{Path, PathBuf},
     },
-    strum::{FromRepr},
+    // strum::{FromRepr},
     tokio::fs::{create_dir_all, read_to_string, write, OpenOptions},
     //shvft_mapper::parsemap
 };
@@ -194,13 +194,11 @@ impl MvPlayer {
         }
         let _ = write(
             format!(
-                "keys/{}/maps/{}/data.json",
-                self.keys[0], self.room_id
+                "rooms/{}/data.json",
+                self.keys[0]
             ),
             to_string_pretty(room).unwrap(),
-        )
-        .await
-        .unwrap();
+        ).await.unwrap();
     }
 }
 //
@@ -213,6 +211,7 @@ impl MvRoom {
                 // default map, 7x7
                 // empty room with solid walls
                 2,2,2,2,2,2,2,
+                2,1,1,1,1,1,2,
                 2,1,1,1,1,1,2,
                 2,1,1,1,1,1,2,
                 2,1,1,1,1,1,2,
@@ -292,23 +291,6 @@ pub struct MvDoor {
     pub there: Pos,
     pub exit_map: String,
     pub exit_direction: char,
-}
-
-
-#[derive(Deserialize, Serialize, Debug, Clone)]
-pub struct MvPlayerInfo {
-    pub current_map: String,
-    pub nametag: String,
-    pub db: HashMap<String, DbItem>,
-    pub pos: Pos,
-    pub inventory: Vec<u8>,
-    pub rail: Vec<u8>,
-}
-#[derive(Deserialize, Serialize, Debug, Clone)]
-pub struct MvPlayer {
-    pub key: String,
-    pub info: MvPlayerInfo,
-    pub map: MvRoom,
 }
 impl MvPlayer {
 
