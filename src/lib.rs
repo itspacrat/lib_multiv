@@ -62,10 +62,19 @@ fn get_attrs(db: &HashMap<String, DbItem>, item_id: u8) -> Result<&[MvTileAttrib
 /// the room typestruct has a designated list of access keys, 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct MvRoom {
-    keys: [Vec<String>;2],
-    id: String,
-    tiles: Vec<u8>,
-    width: usize
+    /// ## Room keys
+    /// #### Array assignment
+    /// keys\[0] is the vector of room-denied (blacklisted) keys,
+    /// 
+    /// keys\[1] is the vector of room-accepted (whitelisted) keys
+    ///
+    /// #### use order
+    /// rooms should check if a player is holding a blacklisted 
+    /// key first, and then check if any of their keys are whitelisted after.
+    pub keys: [Vec<String>;2],
+    pub id: String,
+    pub tiles: Vec<u8>,
+    pub width: usize
 }
 //
 /// creates a new instance of a turtle from default values at key
@@ -111,29 +120,33 @@ pub fn next_pos(dir: char, c_pos: &Pos, data: &MvRoom) -> Pos {
 /// ### MvPlayer
 #[derive(PartialEq, Deserialize, Serialize, Clone, Debug)]
 pub struct MvPlayer {
-    keys: Vec<String>,
+    pub keys: Vec<String>,
     /// a string denoting the file name (without the file extension) 
     /// of the room the player is currently in
-    room_id: String,
-    /// a player's position on the cuttent map
-    position: Pos,
+    pub room_id: String,
+    /// a player's position in the room the player is currently in
+    pub position: Pos,
     /// the inventory stores items a player has taken
-    inventory: Vec<u8>,
+    pub inventory: Vec<u8>,
     /// the rail holds up to 3 of a player's equippable items
-    rail: Vec<u8>,
+    pub rail: Vec<u8>,
 }
-
+/*
+!       BEGIN PLAYER + ROOM IMPL
+*/
+//
 impl MvPlayer {
-    /// should be called after checking whether or not a map exists for a given player key.
+    /// should be called after checking whether or not a player exists for a given player key.
     /// 
-    /// instantiates a new player with a given player key
+    /// instantiates a new player with a given player key + default values
     pub fn new(default_key:String) -> Self {
         Self {
+            // start keyring with user's key
             keys: vec![default_key.clone()],
             room_id: default_key.clone(),
-            position: 24,
-            inventory:vec![0,0,0,0,0,0,0],
-            rail: vec![0,0,0]
+            position: 24, // center of the default map
+            inventory:vec![0,0,0,0,0,0,0], // empty
+            rail: vec![0,0,0] // empty
         }
     }
     //
@@ -145,7 +158,7 @@ impl MvPlayer {
                 format!("players/{}/data.json",default_key.clone())
             ).await.unwrap()
         ).unwrap();
-        
+
         player
     }
     //
@@ -188,6 +201,33 @@ impl MvPlayer {
         )
         .await
         .unwrap();
+    }
+}
+//
+impl MvRoom {
+    pub fn new(default_key: String) -> Self {
+        Self {
+            keys: [vec![],vec![]],
+            id: default_key.clone(),
+            tiles: vec![
+                // default map, 7x7
+                // empty room with solid walls
+                2,2,2,2,2,2,2,
+                2,1,1,1,1,1,2,
+                2,1,1,1,1,1,2,
+                2,1,1,1,1,1,2,
+                2,1,1,1,1,1,2,
+                2,2,2,2,2,2,2
+            ],
+            // define width for next_pos()
+            width: 7
+        }
+    }
+    pub async fn from_existing(default_key: String) -> MvRoom {
+        let room: MvRoom = from_str(
+            &read_to_string(format!("rooms/{}/data.json",default_key.clone())).await.unwrap()
+        ).unwrap();
+        room
     }
 }
 // blake put his blood sweat and tears into this, do not give 
