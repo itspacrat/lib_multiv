@@ -1,9 +1,5 @@
-use std::mem::{swap, take};
-
-use anyhow::ensure;
-
 use {
-    anyhow::{Context, Error, Result},
+    anyhow::{Context, Error, Result, ensure},
     image::{
         imageops::{resize, FilterType},
         ImageBuffer, Pixel, RgbImage,
@@ -12,6 +8,7 @@ use {
     serde_json::{from_str, to_string, to_string_pretty},
     std::{
         //cell::RefCell,
+        mem::{swap, take},
         collections::HashMap,
         path::{Path, PathBuf},
     },
