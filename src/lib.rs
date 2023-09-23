@@ -1,4 +1,4 @@
-use std::mem::{take, swap};
+use std::mem::{swap, take};
 
 use anyhow::ensure;
 
@@ -48,7 +48,7 @@ pub struct DbItem {
     pub attributes: MvTileAttributes,
 }
 // todo: necessary??? idk
-pub type DB = HashMap<String,DbItem>;
+pub type DB = HashMap<String, DbItem>;
 
 fn get_attrs(db: &HashMap<String, DbItem>, item_id: u8) -> Result<&[MvTileAttribute]> {
     Ok(&db
@@ -58,23 +58,23 @@ fn get_attrs(db: &HashMap<String, DbItem>, item_id: u8) -> Result<&[MvTileAttrib
 }
 
 /// ### MvRoom
-/// 
-/// the room typestruct has a designated list of access keys, 
+///
+/// the room typestruct has a designated list of access keys,
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct MvRoom {
     /// ## Room keys
     /// #### Array assignment
     /// keys\[0] is the vector of room-denied (blacklisted) keys,
-    /// 
+    ///
     /// keys\[1] is the vector of room-accepted (whitelisted) keys
     ///
     /// #### use order
-    /// rooms should check if a player is holding a blacklisted 
+    /// rooms should check if a player is holding a blacklisted
     /// key first, and then check if any of their keys are whitelisted after.
-    pub keys: [Vec<String>;2],
+    pub keys: [Vec<String>; 2],
     //pub id: String, // todo remove, redundant
     pub tiles: Vec<u8>,
-    pub width: usize
+    pub width: usize,
 }
 //
 /// creates a new instance of a turtle from default values at key
@@ -121,7 +121,7 @@ pub fn next_pos(dir: char, c_pos: &Pos, data: &MvRoom) -> Pos {
 #[derive(PartialEq, Deserialize, Serialize, Clone, Debug)]
 pub struct MvPlayer {
     pub keys: Vec<String>,
-    /// a string denoting the file name (without the file extension) 
+    /// a string denoting the file name (without the file extension)
     /// of the room the player is currently in
     pub room_id: String,
     /// a player's position in the room the player is currently in
@@ -137,27 +137,27 @@ pub struct MvPlayer {
 //
 impl MvPlayer {
     /// should be called after checking whether or not a player exists for a given player key.
-    /// 
+    ///
     /// instantiates a new player with a given player key + default values
-    pub fn new(default_key:String) -> Self {
+    pub fn new(default_key: String) -> Self {
         Self {
             // start keyring with user's key
             keys: vec![default_key.clone()],
             room_id: default_key.clone(),
-            position: 24, // center of the default map
-            inventory:vec![0,0,0,0,0,0,0], // empty
-            rail: vec![0,0,0] // empty
+            position: 24,                         // center of the default map
+            inventory: vec![0, 0, 0, 0, 0, 0, 0], // empty
+            rail: vec![0, 0, 0],                  // empty
         }
     }
     //
     /// loads playerdata from a file matching the current player's key
     pub async fn from_existing(default_key: String) -> MvPlayer {
-        
-        let player: MvPlayer =  from_str(
-            &read_to_string(
-                format!("players/{}/data.json",default_key.clone())
-            ).await.unwrap()
-        ).unwrap();
+        let player: MvPlayer = from_str(
+            &read_to_string(format!("players/{}/data.json", default_key.clone()))
+                .await
+                .unwrap(),
+        )
+        .unwrap();
 
         player
     }
@@ -169,10 +169,7 @@ impl MvPlayer {
         //
         // march over every direction and process n times for n directions
         for d in dirs.iter() {
-            let attrs_next = get_attrs(
-                db, room.tiles[next_pos(*d, &self.position,room)],
-            )
-            .unwrap();
+            let attrs_next = get_attrs(db, room.tiles[next_pos(*d, &self.position, room)]).unwrap();
             //
             // !            attribute checks begin here
             //
@@ -189,13 +186,12 @@ impl MvPlayer {
                     let mut here = tiles_mut[self.position];
                     let mut there = tiles_mut[next];
 
-                    swap( &mut here, &mut there);
+                    swap(&mut here, &mut there);
 
                     mv_out = next_pos(*d, &(self.position), room)
                 } else {
                     mv_out = self.position;
                 }
-                
             } else {
                 mv_out = next_pos(*d, &(self.position), &room);
             }
@@ -203,43 +199,40 @@ impl MvPlayer {
             self.position = mv_out;
         }
         let _ = write(
-            format!(
-                "rooms/{}/data.json",
-                self.keys[0]
-            ),
+            format!("rooms/{}/data.json", self.keys[0]),
             to_string_pretty(room).unwrap(),
-        ).await.unwrap();
+        )
+        .await
+        .unwrap();
     }
 }
 //
 impl MvRoom {
     pub fn new(default_key: String) -> Self {
         Self {
-            keys: [vec![],vec![default_key.clone()]],
+            keys: [vec![], vec![default_key.clone()]],
             //id: default_key.clone(),
             tiles: vec![
                 // default map, 7x7
                 // empty room with solid walls
-                2,2,2,2,2,2,2,
-                2,1,1,1,1,1,2,
-                2,1,1,1,1,1,2,
-                2,1,1,1,1,1,2,
-                2,1,1,1,1,1,2,
-                2,1,1,1,1,1,2,
-                2,2,2,2,2,2,2
+                2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 1, 2,
+                2, 1, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2,
             ],
             // define width for next_pos()
-            width: 7
+            width: 7,
         }
     }
     pub async fn from_existing(default_key: String) -> MvRoom {
         let room: MvRoom = from_str(
-            &read_to_string(format!("rooms/{}/data.json",default_key.clone())).await.unwrap()
-        ).unwrap();
+            &read_to_string(format!("rooms/{}/data.json", default_key.clone()))
+                .await
+                .unwrap(),
+        )
+        .unwrap();
         room
     }
 }
-// blake put his blood sweat and tears into this, do not give 
+// blake put his blood sweat and tears into this, do not give
 // it the disrespect of commenting it out
 /// returns the index of the first free slot in the player's inventory
 pub fn ck_inv_empty(inventory: &mut Vec<u8>) -> Option<usize> {
@@ -262,7 +255,7 @@ pub fn ck_inv_empty(inventory: &mut Vec<u8>) -> Option<usize> {
     out
 }
 
-/* 
+/*
 #[derive(Deserialize, Serialize, Debug, Clone, Copy, PartialEq, FromRepr)]
 #[repr(u8)]
 pub enum MvTile {
@@ -305,7 +298,7 @@ pub struct MvDoor {
 impl MvPlayer {
 
     pub fn container_swap(&mut self, box_dir: char, give_index: usize, take_index: usize) {
-        
+
 
         let Self {
             info: MvPlayerInfo { pos: refpos, .. },
