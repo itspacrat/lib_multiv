@@ -1,4 +1,4 @@
-use std::mem::take;
+use std::mem::{take, swap};
 
 use anyhow::ensure;
 
@@ -72,7 +72,7 @@ pub struct MvRoom {
     /// rooms should check if a player is holding a blacklisted 
     /// key first, and then check if any of their keys are whitelisted after.
     pub keys: [Vec<String>;2],
-    pub id: String,
+    //pub id: String, // todo remove, redundant
     pub tiles: Vec<u8>,
     pub width: usize
 }
@@ -162,30 +162,40 @@ impl MvPlayer {
         player
     }
     //
-    /// handles moving the palyer in a room
+    //*                         MOVEMENT
+    /// handles moving the player in a room
     pub async fn mv(&mut self, room: &mut MvRoom, db: &DB, dirs: Vec<char>) {
         let mut mv_out: Pos;
+        //
+        // march over every direction and process n times for n directions
         for d in dirs.iter() {
             let attrs_next = get_attrs(
-                db,
-                room.tiles[next_pos(*d, &self.position,room)],
+                db, room.tiles[next_pos(*d, &self.position,room)],
             )
             .unwrap();
-
+            //
+            // !            attribute checks begin here
+            //
+            // check if solid
             if attrs_next.contains(&MvTileAttribute::NoPassThrough) {
+                //
+                // check if it has push
                 if attrs_next.contains(&MvTileAttribute::Push) {
                     let next = next_pos(*d, &self.position, room);
                     let mut dummy: u8 = 0_u8;
-
+                    //
                     // swap push tiles
-                    dummy = room.tiles[self.position];
-                    room.tiles[self.position] = room.tiles[next];
-                    room.tiles[next] = dummy;
+                    let tiles_mut = &mut room.tiles;
+                    let mut here = tiles_mut[self.position];
+                    let mut there = tiles_mut[next];
+
+                    swap( &mut here, &mut there);
 
                     mv_out = next_pos(*d, &(self.position), room)
                 } else {
                     mv_out = self.position;
                 }
+                
             } else {
                 mv_out = next_pos(*d, &(self.position), &room);
             }
