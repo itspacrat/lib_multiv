@@ -215,8 +215,8 @@ impl MvPlayer {
 impl MvRoom {
     pub fn new(default_key: String) -> Self {
         Self {
-            keys: [vec![],vec![]],
-            id: default_key.clone(),
+            keys: [vec![],vec![default_key.clone()]],
+            //id: default_key.clone(),
             tiles: vec![
                 // default map, 7x7
                 // empty room with solid walls
