@@ -61,8 +61,7 @@ impl MvPlayer {
                 // check if it has push
                 if attrs_next.contains(&MvTileAttribute::Push) {
                     let next = next_pos(*d, &self.position, room);
-                    let mut dummy: u8 = 0_u8;
-                    //
+                    
                     // swap push tiles
                     let tiles_mut = &mut room.tiles;
                     let mut here = tiles_mut[self.position];
@@ -86,5 +85,26 @@ impl MvPlayer {
         )
         .await
         .unwrap();
+    }
+    /// checks the tile in a given direction
+    pub fn ck(&self, db: &DB, interact: bool, room: &mut MvRoom, direction: char) -> String {
+        let output: String;
+        let next = next_pos(direction, &self.position,room);
+        match interact {
+
+            false => {
+                // this replaces the old separate peek command
+
+                output = format!("peeked `{}` @ `{}`:\n{}",&self.position,&direction,room.tiles[next]);
+            }
+            true => {
+                // this is the same as the old check command
+                let item_type = db.get(&format!("{}",(room.tiles[next]))).unwrap().clone();
+
+                output = format!("{}:\n{}",room.tiles[next],&item_type.description);
+            }
+            
+        }
+        format!("{}",output)
     }
 }
