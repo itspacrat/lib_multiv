@@ -99,12 +99,6 @@ pub fn next_pos(dir: char, c_pos: &Pos, data: &MvRoom) -> Pos {
     potential_pos
 }
 
-/*
-!       BEGIN PLAYER + ROOM IMPL
-*/
-//
-
-
 // blake put his blood sweat and tears into this, do not give
 // it the disrespect of commenting it out
 /// returns the index of the first free slot in the player's inventory
