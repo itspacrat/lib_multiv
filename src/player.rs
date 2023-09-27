@@ -21,11 +21,11 @@ impl MvPlayer {
     pub fn new(default_key: String) -> Self {
         Self {
             // start keyring with user's key
-            keys: vec![default_key.clone()],
-            room_id: default_key.clone(),
-            position: 24,                         // center of the default map
+            keys: vec![default_key.clone()], // initialize w player key
+            room_id: default_key.clone(),    // default palyer room
+            position: 24,                    // center of the default map
             inventory: vec![0, 0, 0, 0, 0, 0, 0], // empty
-            rail: vec![0, 0, 0],                  // empty
+            rail: vec![0, 0, 0],             // empty
         }
     }
     //
@@ -41,8 +41,8 @@ impl MvPlayer {
         player
     }
     /*
-!       BEGIN PLAYER IMPL
-*/
+    !       BEGIN PLAYER IMPL
+    */
     //
     //*                         MOVEMENT
     /// handles moving the player in a room
@@ -61,17 +61,14 @@ impl MvPlayer {
                 //
                 // check if it has push
                 if attrs_next.contains(&MvTileAttribute::Push) {
-
                     let next = next_pos(*d, &self.position, room);
-                    
+
                     // swap push tiles
                     let dummy: u8;
                     let expensive_room_clone = room.clone().to_owned();
                     dummy = room.tiles[next];
                     room.tiles[next] = room.tiles[next_pos(*d, &next, room)];
                     room.tiles[next_pos(*d, &next, &expensive_room_clone)] = dummy;
-
-                    
 
                     mv_out = next_pos(*d, &(self.position), room)
                 } else {
@@ -93,22 +90,23 @@ impl MvPlayer {
     /// checks the tile in a given direction
     pub fn ck(&self, db: &DB, interact: bool, room: &mut MvRoom, direction: char) -> String {
         let output: String;
-        let next = next_pos(direction, &self.position,room);
+        let next = next_pos(direction, &self.position, room);
         match interact {
-
             false => {
                 // this replaces the old separate peek command
 
-                output = format!("peeked `{}` @ `{}`:\n{}",&self.position,&direction,room.tiles[next]);
+                output = format!(
+                    "peeked `{}` @ `{}`:\n{}",
+                    &self.position, &direction, room.tiles[next]
+                );
             }
             true => {
                 // this is the same as the old check command
-                let item_type = db.get(&format!("{}",(room.tiles[next]))).unwrap().clone();
+                let item_type = db.get(&format!("{}", (room.tiles[next]))).unwrap().clone();
 
-                output = format!("{}:\n{}",room.tiles[next],&item_type.description);
+                output = format!("{}:\n{}", room.tiles[next], &item_type.description);
             }
-            
         }
-        format!("{}",output)
+        format!("{}", output)
     }
 }
