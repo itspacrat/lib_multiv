@@ -114,10 +114,10 @@ pub fn ck_inv_empty(inventory: &mut Vec<u8>) -> Option<usize> {
             println!("x {} slot full.", &index)
         }
     }
-    if free_slots.len() > 0 {
-        out = Some(free_slots[0])
-    } else {
+    if !(free_slots.len() > 0) {
         out = None
+    } else {
+        out = Some(free_slots[0])
     }
     out
 }
