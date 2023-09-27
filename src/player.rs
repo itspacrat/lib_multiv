@@ -56,18 +56,22 @@ impl MvPlayer {
             // !            attribute checks begin here
             //
             // check if solid
+            //println!("attrs next pos: {:?}",attrs_next);
             if attrs_next.contains(&MvTileAttribute::NoPassThrough) {
                 //
                 // check if it has push
                 if attrs_next.contains(&MvTileAttribute::Push) {
+
                     let next = next_pos(*d, &self.position, room);
                     
                     // swap push tiles
-                    let tiles_mut = &mut room.tiles;
-                    let mut here = tiles_mut[self.position];
-                    let mut there = tiles_mut[next];
+                    let dummy: u8;
+                    let expensive_room_clone = room.clone().to_owned();
+                    dummy = room.tiles[next];
+                    room.tiles[next] = room.tiles[next_pos(*d, &next, room)];
+                    room.tiles[next_pos(*d, &next, &expensive_room_clone)] = dummy;
 
-                    swap(&mut here, &mut there);
+                    
 
                     mv_out = next_pos(*d, &(self.position), room)
                 } else {
