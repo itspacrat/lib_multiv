@@ -14,6 +14,17 @@ pub struct MvPlayer {
     /// the rail holds up to 3 of a player's equippable items
     pub rail: Vec<u8>,
 }
+
+/// compare a list of strings to another list of strings. unsure if this is necessary to have.
+pub fn has_key(guest_keys: Vec<String>, host_keys: Vec<String>) -> bool {
+    let mut out: bool = false;
+    for k in guest_keys {
+        if host_keys.contains(&k) {
+            out = true;
+        }
+    }
+    out
+}
 impl MvPlayer {
     /// should be called after checking whether or not a player exists for a given player key.
     ///
@@ -62,15 +73,22 @@ impl MvPlayer {
                 // check if it has push
                 if attrs_next.contains(&MvTileAttribute::Push) {
                     let next = next_pos(*d, &self.position, room);
-
-                    // swap push tiles
-                    let dummy: u8;
                     let expensive_room_clone = room.clone().to_owned();
-                    dummy = room.tiles[next];
-                    room.tiles[next] = room.tiles[next_pos(*d, &next, room)];
-                    room.tiles[next_pos(*d, &next, &expensive_room_clone)] = dummy;
+                    let next_2 = next_pos(*d, &next, &expensive_room_clone);
 
-                    mv_out = next_pos(*d, &(self.position), room)
+                    if get_attrs(db, expensive_room_clone.tiles[next_2]).unwrap()
+                        .contains(&MvTileAttribute::NoPassThrough)
+                    {
+                        mv_out = self.position;
+                    } else {
+                        // swap push tiles
+                        let dummy: u8;
+                        dummy = room.tiles[next];
+                        room.tiles[next] = room.tiles[next_2];
+                        room.tiles[next_2] = dummy;
+
+                        mv_out = next_pos(*d, &(self.position), room)
+                    }
                 } else {
                     mv_out = self.position;
                 }
