@@ -60,8 +60,7 @@ fn get_attrs(db: &HashMap<String, DbItem>, item_id: u8) -> Result<&[MvTileAttrib
 /// creates a new instance of a turtle from default values at key
 /// sets & returns the potential map index given a direction and an MvRoom reference
 pub fn next_pos(dir: char, c_pos: &Pos, data: &MvRoom) -> Pos {
-    // todo: redundant/unusable?
-    //let height = ((data.width as f32 / data.tiles.len() as f32).ceil()) as usize;
+    
     let potential_pos: Pos;
     match dir {
         'n' | 'N' => {

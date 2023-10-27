@@ -16,8 +16,8 @@ pub struct MvRoom {
     /// key first, and then check if any of their keys are whitelisted after.
     pub keys: [Vec<String>; 2],
     //pub id: String, // todo remove, redundant
-    pub tiles: Vec<u8>,
     pub width: usize,
+    pub tiles: Vec<u8>,
 }
 /*
 !       BEGIN ROOM IMPL
@@ -46,5 +46,8 @@ impl MvRoom {
         )
         .unwrap();
         room
+    }
+    pub fn height(&self) -> Pos {
+        (self.tiles.len() / self.width) as Pos
     }
 }
