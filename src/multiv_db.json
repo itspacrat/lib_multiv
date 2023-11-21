@@ -1,0 +1,172 @@
+{
+    "0":{
+        "description":"null item",
+        "rgb":[255, 0, 255],
+        "attributes":["Null"]
+    },
+    "1": {
+        "description":"floor tile",
+        "rgb":[190, 190, 190],
+        "attributes": []
+    },
+    "2": {
+        "description":"wall tile",
+        "rgb":[64, 64, 64],
+        "attributes": ["NoPassThrough"]
+    },
+    "3": {
+        "description":"steel workbench tile",
+        "rgb":[80, 107, 107],
+        "attributes": ["NoPassThrough"]
+    },
+    "4": {
+        "description":"Door tile",
+        "rgb":[120, 120, 120],
+        "attributes": ["NoPassThrough","Door"]
+    },
+    "5": {
+        "description":"open Door tile",
+        "rgb":[100, 100, 100],
+        "attributes": ["OpenDoor"]
+    },
+    "6": {
+        "description":"wood crate tile",
+        "rgb":[100, 100, 30],
+        "attributes": ["NoPassThrough","StoreItems"]
+    },
+    "7": {
+        "description":"cardboard box tile",
+        "rgb":[69, 55, 40],
+        "attributes": ["NoPassThrough","Push"]
+    },
+    "8": {
+        "description":"note tile",
+        "rgb":[224, 220, 200],
+        "attributes":["Read"]
+    },
+    "9": {
+        "description":"computer tile",
+        "rgb":[40, 60, 80],
+        "attributes":["Read","NoPassThrough","Write"]
+    },
+    "10": {
+        "description":"scanner upgrade",
+        "rgb":[69, 133, 151],
+        "attributes":["Take","Drop","Equip"]
+    },
+    "11": {
+        "description":"scanner (II) upgrade",
+        "rgb":[77, 82, 137],
+        "attributes":["Take","Drop","Equip"]
+    },
+    "12": {
+        "description":"door (locked: I) tile",
+        "rgb":[121, 177, 137],
+        "attributes":["NoPassThrough","Locked"]
+    },
+    "13": {
+        "description":"door (locked: II) tile",
+        "rgb":[182, 133, 143],
+        "attributes":["NoPassThrough","Locked"]
+    },
+    "14": {
+        "description":"switch tile",
+        "rgb":[214, 200, 94],
+        "attributes":["NoPassThrough","State"]
+    },
+    "15": {
+        "description":"endpoint tile",
+        "rgb":[237, 172, 59],
+        "attributes":["NoPassThrough","State"]
+    },
+    "16": {
+        "description":"nondescript tile",
+        "rgb":[214, 200, 94],
+        "attributes":[]
+    },
+    "17": {
+        "description":"switch tile",
+        "rgb":[214, 200, 94],
+        "attributes":[]
+    },
+    "18": {
+        "description":"grate flooring tile",
+        "rgb":[0, 9, 46],
+        "attributes":[]
+    },
+    "19": {
+        "description":"reset switch tile",
+        "rgb":[39, 0, 88],
+        "attributes":["NoPassThrough","State"]
+    },
+    "20": {
+        "description":"switch tile",
+        "rgb":[214, 200, 94],
+        "attributes":[]
+    },
+    "21": {
+        "description":"switch tile",
+        "rgb":[214, 200, 94],
+        "attributes":[]
+    },
+    "22": {
+        "description":"switch tile",
+        "rgb":[214, 200, 94],
+        "attributes":[]
+    },
+    "23": {
+        "description":"switch tile",
+        "rgb":[214, 200, 94],
+        "attributes":[]
+    },
+    "24": {
+        "description":"switch tile",
+        "rgb":[214, 200, 94],
+        "attributes":[]
+    },
+    "25": {
+        "description":"switch tile",
+        "rgb":[214, 200, 94],
+        "attributes":[]
+    },
+    "26": {
+        "description":"switch tile",
+        "rgb":[214, 200, 94],
+        "attributes":[]
+    },
+    "27": {
+        "description":"switch tile",
+        "rgb":[214, 200, 94],
+        "attributes":[]
+    },
+    "28": {
+        "description":"switch tile",
+        "rgb":[214, 200, 94],
+        "attributes":[]
+    },
+    "29": {
+        "description":"switch tile",
+        "rgb":[214, 200, 94],
+        "attributes":[]
+    },
+    "30": {
+        "description":"switch tile",
+        "rgb":[214, 200, 94],
+        "attributes":[]
+    },
+    "31": {
+        "description":"switch tile",
+        "rgb":[214, 200, 94],
+        "attributes":[]
+    },
+    "32": {
+        "description":"switch tile",
+        "rgb":[214, 200, 94],
+        "attributes":[]
+    },
+    "33": {
+        "description":"switch tile",
+        "rgb":[214, 200, 94],
+        "attributes":[]
+    }
+}

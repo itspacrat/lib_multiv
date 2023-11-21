@@ -1,9 +1,6 @@
 use {
     anyhow::{Context, Error, Result, ensure},
-    image::{
-        imageops::{resize, FilterType},
-        ImageBuffer, Pixel, RgbImage,
-    },
+    
     serde::{Deserialize, Serialize},
     serde_json::{from_str, to_string, to_string_pretty},
     std::{

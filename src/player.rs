@@ -13,10 +13,13 @@ pub struct MvPlayer {
     pub inventory: Vec<u8>,
     /// the rail holds up to 3 of a player's equippable items
     pub rail: Vec<u8>,
+    /// the feature list the player currently has access to;
+    /// helps limit the abilities of those solving puzzles :^)
+    pub features: Vec<String>,
 }
 
 /// compare a list of strings to another list of strings. unsure if this is necessary to have.
-pub fn has_key(guest_keys: Vec<String>, host_keys: Vec<String>) -> bool {
+pub fn host_has_key(guest_keys: Vec<String>, host_keys: Vec<String>) -> bool {
     let mut out: bool = false;
     for k in guest_keys {
         if host_keys.contains(&k) {
@@ -25,6 +28,7 @@ pub fn has_key(guest_keys: Vec<String>, host_keys: Vec<String>) -> bool {
     }
     out
 }
+
 impl MvPlayer {
     /// should be called after checking whether or not a player exists for a given player key.
     ///
@@ -33,10 +37,11 @@ impl MvPlayer {
         Self {
             // start keyring with user's key
             keys: vec![default_key.clone()], // initialize w player key
-            room_id: default_key.clone(),    // default palyer room
+            room_id: default_key.clone(),    // default player room
             position: 24,                    // center of the default map
             inventory: vec![0, 0, 0, 0, 0, 0, 0], // empty
             rail: vec![0, 0, 0],             // empty
+            features: vec![String::from("mv")], // default
         }
     }
     //
@@ -76,7 +81,8 @@ impl MvPlayer {
                     let expensive_room_clone = room.clone().to_owned();
                     let next_2 = next_pos(*d, &next, &expensive_room_clone);
 
-                    if get_attrs(db, expensive_room_clone.tiles[next_2]).unwrap()
+                    if get_attrs(db, expensive_room_clone.tiles[next_2])
+                        .unwrap()
                         .contains(&MvTileAttribute::NoPassThrough)
                     {
                         mv_out = self.position;
@@ -105,24 +111,38 @@ impl MvPlayer {
         .await
         .unwrap();
     }
-    /// checks the tile in a given direction
+    /// with interact set to `false`, checks the tile [DB] id in a given direction
+    ///
+    /// with interact set to `true`, gets detailed information on the tile in a
+    /// given direction, and triggers an interaction where applicable
     pub fn ck(&self, db: &DB, interact: bool, room: &mut MvRoom, direction: char) -> String {
         let output: String;
         let next = next_pos(direction, &self.position, room);
+        let target = room.tiles[next];
         match interact {
             false => {
                 // this replaces the old separate peek command
 
                 output = format!(
                     "peeked `{}` @ `{}`:\n{}",
-                    &self.position, &direction, room.tiles[next]
+                    &self.position, &direction, target
                 );
             }
             true => {
                 // this is the same as the old check command
-                let item_type = db.get(&format!("{}", (room.tiles[next]))).unwrap().clone();
+                let item_type = db.get(&format!("{}", (target))).unwrap().clone();
 
-                output = format!("{}:\n{}", room.tiles[next], &item_type.description);
+                // check for specific interractions
+                match target {
+                    8 => {
+                        // read the thing
+                        output = format!("{}:\n{}", target, &item_type.description);
+                    }
+                    _ => {
+                        
+                        output = format!("{}:\n{}", target, &item_type.description);
+                    }
+                }
             }
         }
         format!("{}", output)
