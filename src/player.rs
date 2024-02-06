@@ -136,7 +136,8 @@ impl MvPlayer {
                 match target {
                     8 => {
                         // read the thing
-                        output = format!("{}:\n{}", target, &item_type.description);
+                        output = format!("{} ({}):\n{}\n\n{}", target, next, &item_type.description,room.notes.get(&next).unwrap());
+
                     }
                     _ => {
                         
