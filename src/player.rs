@@ -96,6 +96,12 @@ impl MvPlayer {
                         mv_out = next_pos(*d, &(self.position), room)
                     }
                 } else {
+                    //todo
+                    /*if attrs_next.contains(&MvTileAttribute::OpenDoor) {
+                        // swap map here
+
+                    } else
+                    {mv_out = self.position;}*/
                     mv_out = self.position;
                 }
             } else {

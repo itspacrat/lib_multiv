@@ -1,12 +1,24 @@
 use crate::*;
 use image::{
-    Rgb,
     imageops::{resize, FilterType},
-    ImageBuffer, Pixel, RgbImage,
+    Pixel, Rgb, RgbImage,
 };
+
+/// ### MvDoor
+/// controls inter-room travel
+/// 
+/// TODO: key checks
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct MvDoor {
+    pub here: Pos,
+    pub there: Pos,
+    pub exit_map: String,
+    pub exit_direction: char,
+}
+
 /// the width of the returned image for a rendered set of [MvRoom] tiles
 ///
-/// todo: make this a part of a config 
+/// todo: make this a part of a config
 /// file so it updates on every ran command
 pub const MAP_RENDER_WIDTH: u32 = 500;
 /// ### MvRoom
@@ -24,9 +36,9 @@ pub struct MvRoom {
     /// rooms should check if a player is holding a blacklisted
     /// key first, and then check if any of their keys are whitelisted after.
     pub keys: [Vec<String>; 2],
-    //pub id: String, // todo remove, redundant
+    pub doors: Vec<MvDoor>,
     pub width: usize,
-    pub notes: HashMap<Pos,String>,
+    pub notes: HashMap<Pos, String>,
     pub tiles: Vec<u8>,
 }
 /*
@@ -39,6 +51,7 @@ impl MvRoom {
             keys: [vec![], vec![default_key.clone()]],
             //id: default_key.clone(),
             width: 7,
+            doors: vec![],
             notes: HashMap::new(),
             tiles: vec![
                 // default map, 7x7
@@ -47,7 +60,6 @@ impl MvRoom {
                 2, 1, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2,
             ],
             // define width for next_pos()
-            
         }
     }
     pub async fn from_existing(default_key: String) -> MvRoom {
@@ -66,29 +78,30 @@ impl MvRoom {
     pub async fn render_map(&self, player: String, position: Pos, database: DB) -> String {
         let p = player;
         //
-        let Self {tiles,width,..} = self;
+        let Self { tiles, width, .. } = self;
         //
         let mut out_img = RgbImage::new(*width as u32, self.height() as u32);
         //
         for x in 0..*width {
             for y in 0..self.height() {
-                
-                let rgb = database.get(&format!("{}",tiles[(y*(width))+x])).unwrap().rgb;
-                out_img.put_pixel(
-                    x as u32, y as u32,
-                    *Rgb::from_slice(&rgb)
-                );
+                let rgb = database
+                    .get(&format!("{}", tiles[(y * (width)) + x]))
+                    .unwrap()
+                    .rgb;
+                out_img.put_pixel(x as u32, y as u32, *Rgb::from_slice(&rgb));
                 // Overlay player pos on map, currently light spring green
-                if (y*width)+x == position {
-                    out_img.put_pixel(
-                        x as u32, y as u32,
-                        *Rgb::from_slice(&[0,200,150])
-                    );
+                if (y * width) + x == position {
+                    out_img.put_pixel(x as u32, y as u32, *Rgb::from_slice(&[0, 200, 150]));
                 }
             }
         }
-        out_img = resize(&out_img,MAP_RENDER_WIDTH,(MAP_RENDER_WIDTH/&out_img.width())*out_img.height(),FilterType::Nearest);
-        let out_path = format!("players/{}/current_map.jpg",&p);
+        out_img = resize(
+            &out_img,
+            MAP_RENDER_WIDTH,
+            (MAP_RENDER_WIDTH / &out_img.width()) * out_img.height(),
+            FilterType::Nearest,
+        );
+        let out_path = format!("players/{}/current_map.jpg", &p);
         out_img.save(&out_path).unwrap();
         out_path
     }
