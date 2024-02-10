@@ -78,7 +78,7 @@ impl MvRoom {
                     x as u32, y as u32,
                     *Rgb::from_slice(&rgb)
                 );
-                // Overlay player pos on map, currently light cyan
+                // Overlay player pos on map, currently light spring green
                 if (y*width)+x == position {
                     out_img.put_pixel(
                         x as u32, y as u32,
