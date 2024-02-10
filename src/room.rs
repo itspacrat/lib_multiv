@@ -10,17 +10,26 @@ use image::{
 /// TODO: key checks
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct MvDoor {
+    /// the [Pos]ition in the current room of this door
     pub here: Pos,
+    /// the exit [Pos]ition in the adjacent room to this door;
+    /// 
+    /// an [MvPlayer] will exit their current room and load
+    /// into the adjacent room at this [Pos].
     pub there: Pos,
+    /// the room key directory associated with the 
+    /// [MvRoom] that this door leads to
     pub exit_map: String,
+    /// the cardinal direction an [MvPlayer] must move
+    /// to exit through this door into the adjacent [MvRoom]
     pub exit_direction: char,
 }
 
-/// the width of the returned image for a rendered set of [MvRoom] tiles
+/// the width of the returned image (in tiles) for a rendered set of [MvRoom] tiles
 ///
 /// todo: make this a part of a config
 /// file so it updates on every ran command
-pub const MAP_RENDER_WIDTH: u32 = 500;
+pub const MAP_RENDER_WIDTH: u32 = 480;
 /// ### MvRoom
 ///
 /// the room typestruct has a designated list of access keys,
