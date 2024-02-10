@@ -139,6 +139,18 @@ impl MvPlayer {
                         output = format!("{} ({}):\n{}\n\n{}", target, next, &item_type.description,room.notes.get(&next).unwrap());
 
                     }
+                    4 => {
+                        // open door
+                        output = format!("{}:\n{} \n\n```opened unlocked door.```", target, &item_type.description);
+
+                        room.tiles[next] = 5;
+                    }
+                    5 => {
+                        // close door
+                        output = format!("{}:\n{} \n\n```closed unlocked door.```", target, &item_type.description);
+
+                        room.tiles[next] = 4;
+                    }
                     _ => {
                         
                         output = format!("{}:\n{}", target, &item_type.description);
