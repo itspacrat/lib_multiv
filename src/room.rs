@@ -45,7 +45,7 @@ pub struct MvRoom {
     /// rooms should check if a player is holding a blacklisted
     /// key first, and then check if any of their keys are whitelisted after.
     pub keys: [Vec<String>; 2],
-    pub doors: Vec<MvDoor>,
+    pub doors: HashMap<String,MvDoor>,
     pub width: usize,
     pub notes: HashMap<Pos, String>,
     pub tiles: Vec<u8>,
@@ -60,7 +60,7 @@ impl MvRoom {
             keys: [vec![], vec![default_key.clone()]],
             //id: default_key.clone(),
             width: 7,
-            doors: vec![],
+            doors: HashMap::new(),
             notes: HashMap::new(),
             tiles: vec![
                 // default map, 7x7

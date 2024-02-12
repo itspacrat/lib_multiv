@@ -62,12 +62,13 @@ impl MvPlayer {
     //
     //*                         MOVEMENT
     /// handles moving the player in a room
-    pub async fn mv(&mut self, room: &mut MvRoom, db: &DB, directions: Vec<char>) {
+    pub async fn mv(&mut self, mut room: &mut MvRoom, db: &DB, directions: Vec<char>) {
         let mut mv_out: Pos;
         //
         // march over every direction and process n times for n directions
         for d in directions.iter() {
             let attrs_next = get_attrs(db, room.tiles[next_pos(*d, &self.position, room)]).unwrap();
+            let next = next_pos(*d, &self.position, room);
             //
             // !            attribute checks begin here
             //
@@ -77,7 +78,6 @@ impl MvPlayer {
                 //
                 // check if it has push
                 if attrs_next.contains(&MvTileAttribute::Push) {
-                    let next = next_pos(*d, &self.position, room);
                     let expensive_room_clone = room.clone().to_owned();
                     let next_2 = next_pos(*d, &next, &expensive_room_clone);
 
@@ -96,22 +96,81 @@ impl MvPlayer {
                         mv_out = next_pos(*d, &(self.position), room)
                     }
                 } else {
-                    //todo
-                    /*if attrs_next.contains(&MvTileAttribute::OpenDoor) {
-                        // swap map here
+                    // ! CHECK DOORS
 
-                    } else
-                    {mv_out = self.position;}*/
+                    println!("attrs_next\n{:?}", &attrs_next);
+                    println!("attrs_here {:?}", get_attrs(db, room.tiles[self.position]));
                     mv_out = self.position;
                 }
             } else {
-                mv_out = next_pos(*d, &(self.position), &room);
+                if get_attrs(db, room.tiles[self.position])
+                    .unwrap()
+                    .contains(&MvTileAttribute::OpenDoor)
+                {
+                    println!("this tile has OpenDoor attr");
+
+                    //
+                    // check if actually walking through the door
+                    if *d == room.doors.get(&format!("{}",self.position)).unwrap().exit_direction {
+                        //
+                        // preload next room
+                        let next_room = MvRoom::from_existing(
+                            room.doors.get(&format!("{next}")).unwrap().exit_map.clone(),
+                        )
+                        .await;
+                        // println!("preloaded {}", &next_room.keys[1][0]);
+                        println!("{} eq; saving current room", d);
+                        //
+                        // save current room before swapping
+                        let _ = write(
+                            format!("rooms/{}/data.json", room.keys[1][0]),
+                            to_string_pretty(room).unwrap(),
+                        )
+                        .await
+                        .unwrap();
+                        //
+                        // set player pos for new map
+                        mv_out = room.doors.get(&format!("{}",self.position)).unwrap().there;
+                        //
+                        // hacky stitch together/move room vars
+                        room.tiles = next_room.tiles.to_owned();
+                        room.keys = next_room.keys.to_owned();
+                        room.doors = next_room.doors.to_owned();
+                        room.notes = next_room.notes.to_owned();
+                        room.width = next_room.width.to_owned();
+                        println!("{:?}", room);
+                        //
+                        // set new map for player
+                        self.room_id = ((&room).keys).clone()[1].to_owned()[0].to_owned();
+                        //
+                        // re-save room after swap
+                        let _ = write(
+                            format!("rooms/{}/data.json", room.keys[1][0]),
+                            to_string_pretty(room).unwrap(),
+                        )
+                        .await
+                        .unwrap();
+                        //
+                        // save player key
+                        let _ = write(
+                            format!("players/{}/data.json", self.keys[0]),
+                            to_string_pretty(&self).unwrap(),).await
+                        .unwrap();
+
+                        
+                    } else {
+                        mv_out = self.position;
+                    }
+                } else {
+                    mv_out = next_pos(*d, &(self.position), &room);
+                }
+                
             }
 
             self.position = mv_out;
         }
         let _ = write(
-            format!("rooms/{}/data.json", self.keys[0]),
+            format!("rooms/{}/data.json", room.keys[1][0]),
             to_string_pretty(room).unwrap(),
         )
         .await
@@ -142,23 +201,33 @@ impl MvPlayer {
                 match target {
                     8 => {
                         // read the thing
-                        output = format!("{} ({}):\n{}\n\n{}", target, next, &item_type.description,room.notes.get(&next).unwrap());
-
+                        output = format!(
+                            "{} ({}):\n{}\n\n{}",
+                            target,
+                            next,
+                            &item_type.description,
+                            room.notes.get(&next).unwrap()
+                        );
                     }
                     4 => {
                         // open door
-                        output = format!("{}:\n{} \n\n```opened unlocked door.```", target, &item_type.description);
+                        output = format!(
+                            "{}:\n{} \n```opened unlocked door.```",
+                            target, &item_type.description
+                        );
 
                         room.tiles[next] = 5;
                     }
                     5 => {
                         // close door
-                        output = format!("{}:\n{} \n\n```closed unlocked door.```", target, &item_type.description);
+                        output = format!(
+                            "{}:\n{} \n```closed unlocked door.```",
+                            target, &item_type.description
+                        );
 
                         room.tiles[next] = 4;
                     }
                     _ => {
-                        
                         output = format!("{}:\n{}", target, &item_type.description);
                     }
                 }
